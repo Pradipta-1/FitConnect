@@ -1,0 +1,314 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  USER
+  TRAINER
+  ORGANIZER
+  ADMIN
+}
+
+enum EventStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum TrainerRequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum RoutineRequestStatus {
+  PENDING
+  FULFILLED
+  REJECTED
+}
+
+enum NotificationType {
+  TRAINER_INVITATION_RECEIVED
+  TRAINER_REQUEST_SUBMITTED
+  TRAINER_REQUEST_ACCEPTED
+  EVENT_APPROVED
+  EVENT_REMINDER
+  NEW_MESSAGE
+}
+
+model User {
+  id           String  @id @default(cuid())
+  email        String  @unique
+  passwordHash String
+  role         Role
+  name         String
+  avatarUrl    String?
+  location     String?
+  bio          String?
+
+  isTrainerVerified Boolean? @default(false)
+  certifications    String[] @default([])
+  specializations   String[] @default([])
+  experienceYears   Int?
+  rating            Float?
+  ratingCount       Int      @default(0)
+
+  eventsOrganized   Event[] @relation("OrganizerEvents")
+  eventParticipants Event[] @relation("EventParticipants")
+  trainerEvents     Event[] @relation("TrainerParticipants")
+
+  assignedWorkoutPlans   WorkoutPlan[] @relation("ClientPlans")
+  createdWorkoutPlans    WorkoutPlan[] @relation("TrainerPlans")
+
+  sentTrainerInvitations TrainerInvitation[] @relation("Inviter")
+  receivedInvitations    TrainerInvitation[] @relation("Invitee")
+
+  routineRequestsSent     RoutineRequest[] @relation("UserRoutineRequests")
+  routineRequestsReceived RoutineRequest[] @relation("TrainerRoutineRequests")
+
+  routinesAssigned Routine[] @relation("ClientRoutines")
+  routinesCreated  Routine[] @relation("TrainerRoutines")
+
+  trainerRequests      TrainerEventRequest[]
+  sentMessages         Message[]             @relation("Sender")
+  receivedMessages     Message[]             @relation("Receiver")
+  notifications        Notification[]
+  relatedNotifications Notification[]        @relation("RelatedUser")
+  posts                Post[]
+  likes               Like[]
+  comments            Comment[]
+  progress            DailyProgress[]
+  reportsMade         Report[]              @relation("Reporter")
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  highestStreak       Int @default(0)
+  lastCommunityViewAt DateTime?
+}
+
+model Post {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  content   String?
+  imageUrl  String?
+  createdAt DateTime @default(now())
+  likes     Like[]
+  comments  Comment[]
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  userId    String
+  postId    String
+  user      User     @relation(fields: [userId], references: [id])
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, postId])
+}
+
+model Comment {
+  id        String    @id @default(cuid())
+  content   String
+  imageUrl  String?
+  userId    String
+  postId    String
+  parentId  String?
+  user      User      @relation(fields: [userId], references: [id])
+  post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  parent    Comment?  @relation("CommentToComment", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   Comment[] @relation("CommentToComment")
+  createdAt DateTime  @default(now())
+}
+
+model Event {
+  id               String   @id @default(cuid())
+  title            String
+  sportType        String
+  location         String
+  date             DateTime? // Made optional in favor of ranges if provided
+  startDate        DateTime?
+  endDate          DateTime?
+  time             String?
+  timeRange        String?
+  participantLimit Int
+  description      String
+
+  status            EventStatus @default(APPROVED) // Defaulting to approved for now as per user request (trainer creation)
+  isCancelled       Boolean     @default(false)
+  openToTrainers    Boolean     @default(false)
+  trainersNeeded    Int?
+  trainerConditions String?
+
+  organizerId String
+  organizer   User   @relation("OrganizerEvents", fields: [organizerId], references: [id])
+
+  participants        User[] @relation("EventParticipants")
+  trainerParticipants User[] @relation("TrainerParticipants")
+
+  invitations     TrainerInvitation[]
+  trainerRequests TrainerEventRequest[]
+  messages        Message[]
+  notifications   Notification[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model TrainerInvitation {
+  id               String           @id @default(cuid())
+  organizerId      String
+  trainerId        String
+  eventId          String
+  paymentOffered   Int
+  currency         String           @default("INR")
+  organizerMessage String
+  status           InvitationStatus @default(PENDING)
+
+  organizer User  @relation("Inviter", fields: [organizerId], references: [id])
+  trainer   User  @relation("Invitee", fields: [trainerId], references: [id])
+  event     Event @relation(fields: [eventId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model TrainerEventRequest {
+  id                 String               @id @default(cuid())
+  trainerId          String
+  eventId            String
+  message            String
+  relevantExperience String
+  status             TrainerRequestStatus @default(PENDING)
+
+  trainer User  @relation(fields: [trainerId], references: [id])
+  event   Event @relation(fields: [eventId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Message {
+  id         String  @id @default(cuid())
+  senderId   String?
+  receiverId String?
+  eventId    String?
+
+  content String
+  imageUrl String?
+  read    Boolean @default(false)
+  isSystem Boolean @default(false)
+
+  sender   User?  @relation("Sender", fields: [senderId], references: [id], onDelete: SetNull)
+  receiver User?  @relation("Receiver", fields: [receiverId], references: [id], onDelete: SetNull)
+  event    Event? @relation(fields: [eventId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+model Notification {
+  id             String           @id @default(cuid())
+  userId         String
+  type           NotificationType
+  message        String
+  relatedEventId String?
+  relatedUserId  String?
+  read           Boolean          @default(false)
+
+  user         User   @relation(fields: [userId], references: [id])
+  relatedEvent Event? @relation(fields: [relatedEventId], references: [id])
+  relatedUser  User?  @relation("RelatedUser", fields: [relatedUserId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+model WorkoutPlan {
+  id          String   @id @default(cuid())
+  trainerId   String
+  clientId    String
+  title       String
+  description String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  trainer User @relation("TrainerPlans", fields: [trainerId], references: [id])
+  client  User @relation("ClientPlans", fields: [clientId], references: [id])
+}
+
+model RoutineRequest {
+  id        String               @id @default(cuid())
+  userId    String
+  trainerId String
+  status    RoutineRequestStatus @default(PENDING)
+
+  user    User @relation("UserRoutineRequests", fields: [userId], references: [id])
+  trainer User @relation("TrainerRoutineRequests", fields: [trainerId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, trainerId])
+}
+
+model Routine {
+  id        String  @id @default(cuid())
+  userId    String
+  trainerId String
+  isActive  Boolean @default(false)
+  isArchived Boolean @default(false)
+  days      Json // Array of { day: string, title: string, description: string }
+
+  user     User            @relation("ClientRoutines", fields: [userId], references: [id])
+  trainer  User            @relation("TrainerRoutines", fields: [trainerId], references: [id])
+  progress DailyProgress[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model DailyProgress {
+  id              String   @id @default(cuid())
+  userId          String
+  dateString      String   // format "YYYY-MM-DD"
+  isCompleted     Boolean
+
+  routineId       String?
+  dayTitle        String?
+  dayDescription  String?
+  trainerName     String?
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  routine         Routine? @relation(fields: [routineId], references: [id], onDelete: SetNull)
+
+  createdAt       DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, dateString])
+}
+
+model Report {
+  id             String   @id @default(cuid())
+  reporterId     String
+  reportedUserId String?
+  postId         String?
+  eventId        String?
+  reason         String
+  details        String?
+  status         String   @default("PENDING")
+  createdAt      DateTime @default(now())
+
+  reporter User @relation("Reporter", fields: [reporterId], references: [id], onDelete: Cascade)
+}
