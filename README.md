@@ -1,6 +1,5 @@
 # FitConnect
 
-> **Live Deployment:** [https://fitconnect-eosin.vercel.app/](https://fitconnect-eosin.vercel.app/)
 
 FitConnect is a Next.js-based community fitness platform that connects users, trainers, and admins in a comprehensive fitness ecosystem.
 
