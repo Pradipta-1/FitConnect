@@ -150,9 +150,11 @@ export default function OrganizerShell({ children }: Props) {
       <div className="app-container">
         <nav className="top-nav">
           <div className="nav-brand flex items-center gap-2 sm:gap-2.5 min-w-0">
-            <div className="w-7 h-7 min-w-[28px] rounded-full bg-gradient-to-tr from-emerald-500 to-teal-300 flex items-center justify-center text-black font-extrabold text-[11px] shadow-[0_0_12px_rgba(0,200,150,0.4)] flex-shrink-0">
-              FC
-            </div>
+            <img
+              src="/logo.png"
+              alt="FitConnect"
+              className="w-7 h-7 min-w-[28px] rounded-full object-cover shadow-[0_0_12px_rgba(0,200,150,0.4)] flex-shrink-0"
+            />
             {user && (
               <div className="w-7 h-7 min-w-[28px] rounded-full overflow-hidden border border-emerald-500/40 flex-shrink-0 bg-[#121c17] flex items-center justify-center text-emerald-400 font-bold text-xs">
                 {user.avatarUrl ? (

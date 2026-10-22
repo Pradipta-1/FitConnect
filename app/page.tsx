@@ -8,16 +8,13 @@ export default function LandingPage() {
       <div className="landing-hero-content">
         <div className="landing-logo">
           <div className="landing-logo-icon">
-            <svg width="56" height="56" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="30" cy="30" r="28" fill="url(#gradient)" stroke="#00f5a0" strokeWidth="2.5"/>
-              <text x="30" y="38" textAnchor="middle" fill="#060907" fontSize="19" fontWeight="900" fontFamily="Arial Black, system-ui, sans-serif">FC</text>
-              <defs>
-                <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" style={{stopColor:'#00f5a0'}}/>
-                  <stop offset="100%" style={{stopColor:'#00d2ff'}}/>
-                </linearGradient>
-              </defs>
-            </svg>
+            <img
+              src="/logo.png"
+              alt="FitConnect Logo"
+              width={56}
+              height={56}
+              className="w-14 h-14 rounded-full object-cover"
+            />
           </div>
           <span className="landing-logo-text">FitConnect</span>
         </div>
