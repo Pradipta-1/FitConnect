@@ -3,7 +3,12 @@ import type { ReactNode } from "react";
 
 export const metadata = {
   title: "FitConnect",
-  description: "Find trainers, join events, build your fitness community."
+  description: "Find trainers, join events, build your fitness community.",
+  icons: {
+    icon: "/logo.png",
+    shortcut: "/logo.png",
+    apple: "/logo.png"
+  }
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
